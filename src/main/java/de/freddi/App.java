@@ -1,3 +1,8 @@
+// QR-Code Generator
+// Ein Programm um aus URL QR-Codes zu generieren und diese als .png zu spreichern
+// © Frederick Mäueler 10/2026
+// GitHub: https://github.com/Stadtrabe/qr-code-generator
+
 package de.freddi;
 
 import javafx.application.Application;
@@ -103,36 +108,8 @@ public class App extends Application {
             System.out.println(url);
 
             try {
-                // QR-Code-Generator erstellen
-                QRCodeWriter writer = new QRCodeWriter();
-
-                // URL in eine 300 x 300 Pixel große BitMatrix umwandeln
-                BitMatrix matrix = writer.encode(
-                    url,
-                    BarcodeFormat.QR_CODE,
-                    300,
-                    300
-                );
-
-                // Leeres JavaFX-Bild erstellen
-                WritableImage image = new WritableImage(300, 300);
-
-                // PixelWriter zum Einfärben der Bildpunkte abrufen
-                PixelWriter pixelWriter = image.getPixelWriter();
-
-                // Jeden Bildpunkt durchlaufen
-                for (int x = 0; x < 300; x++) {
-
-                    for (int y = 0; y < 300; y++) {
-
-                        // Schwarze und weiße QR-Code-Felder setzen
-                        if (matrix.get(x, y)) {
-                            pixelWriter.setColor(x, y, Color.BLACK);
-                        } else {
-                            pixelWriter.setColor(x, y, Color.WHITE);
-                        }
-                    }
-                }
+                // Erstellt den QR-Code
+                WritableImage image = generateQrCode(url); 
 
                 // Fertiges Bild in der ImageView anzeigen
                 imgQrCode.setImage(image);
@@ -152,75 +129,27 @@ public class App extends Application {
         });
         
         // Speicher-Button
-        btnSave.setOnAction(e -> {
+        btnSave.setOnAction(e -> saveQrCode(
+        stage,
+        currentQrCode[0],
+        currentUrl[0],
+        lblStatus
+    )
+);
 
-            FileChooser fileChooser = new FileChooser();
-
-            fileChooser.setTitle("QR-Code speichern");
-            
-            //Namensvorschlag aus eingegebener URL erstellen
-            String fileName = getFileNameFromUrl(currentUrl[0]);
-            
-            fileChooser.setInitialFileName(fileName + "_qrcode.png");
-
-            FileChooser.ExtensionFilter pngFilter =
-                new FileChooser.ExtensionFilter(
-                    "PNG-Bild (*.png)",
-                    "*.png"
-            );
-
-            FileChooser.ExtensionFilter allFilter =
-                new FileChooser.ExtensionFilter(
-                    "Alle Dateien (*.*)",
-                    "*.*"
-            );
-
-
-            fileChooser.getExtensionFilters().addAll(
-                    allFilter,
-                    pngFilter
-            );
-
-            fileChooser.setSelectedExtensionFilter(allFilter);
-            
-
-            File file = fileChooser.showSaveDialog(stage);
-
-            if (file != null) {
-
-                try {
-                    ImageIO.write(
-                        SwingFXUtils.fromFXImage(currentQrCode[0], null),
-                        "png",
-                        file
-                    );
-
-                    System.out.println("QR-Code gespeichert: " + file.getAbsolutePath()); //Konsolenanzeige zum Test
-                    lblStatus.setText("✅ QR-Code erfolgreich gespeichert.");
-                    lblStatus.setTextFill(Color.GREEN);
-
-                } catch (Exception ex) {
-                    ex.printStackTrace();
-                }
-            }
-        });
         // Lösch-Button
-        btnClear.setOnAction(e -> {
+        btnClear.setOnAction(e -> 
 
-            imgQrCode.setImage(null);
-            txtUrl.clear();
-            txtUrl.requestFocus();
-
-            currentQrCode[0] = null;
-            currentUrl[0] = null;
-
-            btnSave.setVisible(false);
-            btnClear.setVisible(false);
-
-            lblStatus.setText("Anwendung zurückgesetzt.");
-            lblStatus.setTextFill(Color.ORANGE);
-
-        });
+            resetApplication(
+            imgQrCode,
+            txtUrl,
+            currentQrCode,
+            currentUrl,
+            btnSave,
+            btnClear,
+            lblStatus
+            )
+        );
 
         // Elemente zur VBox hinzufügen
         root.getChildren().addAll(
@@ -255,6 +184,8 @@ public class App extends Application {
         launch(args);
     }
 
+// METHODEN
+    // Dateinamenvorschlag beim Speichern
     private String getFileNameFromUrl(String url) {
 
         String fileName = url
@@ -270,5 +201,121 @@ public class App extends Application {
         fileName = fileName.replace(".", "_");
 
         return fileName;
+    }
+
+    // QR-Code-Erzeugung
+    private WritableImage generateQrCode(String url) throws Exception {
+        // QR-Code-Generator erstellen
+        QRCodeWriter writer = new QRCodeWriter();
+
+        // URL in eine 300 x 300 Pixel große BitMatrix umwandeln
+        BitMatrix matrix = writer.encode(
+            url,
+            BarcodeFormat.QR_CODE,
+            300,
+            300
+        );
+
+        // Leeres JavaFX-Bild erstellen
+        WritableImage image = new WritableImage(300, 300);
+
+        // PixelWriter zum Einfärben der Bildpunkte abrufen
+        PixelWriter pixelWriter = image.getPixelWriter();
+
+        // Jeden Bildpunkt durchlaufen
+        for (int x = 0; x < 300; x++) {
+
+            for (int y = 0; y < 300; y++) {
+
+                // Schwarze und weiße QR-Code-Felder setzen
+                if (matrix.get(x, y)) {
+                    pixelWriter.setColor(x, y, Color.BLACK);
+                } else {
+                    pixelWriter.setColor(x, y, Color.WHITE);
+                }
+            }
+        }
+        return image;
+    }
+
+    // Zurücksetzen
+    private void resetApplication (
+        ImageView imgQrCode,
+        TextField txtUrl,
+        WritableImage[] currentQrCode,
+        String[] currentUrl,
+        Button btnSave,
+        Button btnClear,
+        Label lblStatus) {
+            imgQrCode.setImage(null);
+            
+            txtUrl.clear();
+            txtUrl.requestFocus();
+
+            currentQrCode[0] = null;
+            currentUrl[0] = null;
+
+            btnSave.setVisible(false);
+            btnClear.setVisible(false);
+
+            lblStatus.setText("Anwendung zurückgesetzt.");
+            lblStatus.setTextFill(Color.ORANGE);
+    }
+
+    // Speichern des QR-Codes
+    private void saveQrCode(
+            Stage stage,
+            WritableImage image,
+            String url,
+            Label lblStatus) {
+        FileChooser fileChooser = new FileChooser();
+
+        fileChooser.setTitle("QR-Code speichern");
+        
+        //Namensvorschlag aus eingegebener URL erstellen
+        String fileName = getFileNameFromUrl(url);
+        
+        fileChooser.setInitialFileName(fileName + "_qrcode.png");
+
+        FileChooser.ExtensionFilter pngFilter =
+            new FileChooser.ExtensionFilter(
+                "PNG-Bild (*.png)",
+                "*.png"
+        );
+
+        FileChooser.ExtensionFilter allFilter =
+            new FileChooser.ExtensionFilter(
+                "Alle Dateien (*.*)",
+                "*.*"
+        );
+
+
+        fileChooser.getExtensionFilters().addAll(
+                allFilter,
+                pngFilter
+        );
+
+        fileChooser.setSelectedExtensionFilter(allFilter);
+        
+
+        File file = fileChooser.showSaveDialog(stage);
+
+        if (file != null) {
+
+            try {
+                ImageIO.write(
+                    SwingFXUtils.fromFXImage(image, null),
+                    "png",
+                    file
+                );
+
+                System.out.println("QR-Code gespeichert: " + file.getAbsolutePath()); //Konsolenanzeige zum Test
+                lblStatus.setText("✅ QR-Code erfolgreich gespeichert.");
+                lblStatus.setTextFill(Color.GREEN);
+
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
+        }
     }
 }
